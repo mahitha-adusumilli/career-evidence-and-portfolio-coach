@@ -1,0 +1,37 @@
+import exp from "express"
+import { connect } from 'mongoose';
+import { config } from 'dotenv';
+config(); //process.env
+import { basicApp } from "./APIs/basic-api.js";
+
+//http server
+const app=exp();
+
+
+//body parser middleware
+app.use(exp.json());
+
+//
+app.use("/basic-api",basicApp);
+
+//env variables
+const port=process.env.port;
+const db_url=process.env.db_url;
+
+//connect to database
+async function connectDB(){
+    try{
+    await connect(db_url);
+    console.log("database connection successful");
+    app.listen(port,()=>{console.log(`server listening on port ${port}`)});
+    }catch(err){
+        console.log("error in connecting to database: ",err.message);
+    }
+}
+connectDB();
+
+//ERM
+app.use((error,req,res,next)=>{
+    console.log("error! : ",error.message);
+    res.status(500).json({success:false,message:err.message});
+})
