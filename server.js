@@ -3,7 +3,8 @@ import { connect } from 'mongoose';
 import { config } from 'dotenv';
 config(); //process.env
 import { basicApp } from "./APIs/basic-api.js";
-
+//connecting api to server
+import { authApp } from "./APIs/auth-api.js";
 //http server
 const app=exp();
 
@@ -11,8 +12,10 @@ const app=exp();
 //body parser middleware
 app.use(exp.json());
 
+
 //
 app.use("/basic-api",basicApp);
+app.use("/api/auth", authApp);
 
 //env variables
 const port=process.env.port;
