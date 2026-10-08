@@ -4,6 +4,7 @@ import { config } from 'dotenv';
 config(); //process.env
 import { basicApp } from "./APIs/basic-api.js";
 import { careerChatApp } from "./APIs/career-chat-api.js";
+import { preparationPlanApp } from "./APIs/preparation-plan-api.js";
 
 //http server
 const app=exp();
@@ -15,6 +16,7 @@ app.use(exp.json());
 //
 app.use("/basic-api",basicApp);
 app.use("/api/career-chat", careerChatApp);
+app.use("/api/preparation-plan", preparationPlanApp);
 
 //env variables
 const port=process.env.port;
