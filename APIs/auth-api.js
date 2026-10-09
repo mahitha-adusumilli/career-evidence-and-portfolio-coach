@@ -1,6 +1,8 @@
 import exp from "express";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { User } from "../MODELS/user-model.js";
+import { verifyToken } from "../MIDDLEWARES/auth-middleware.js";
 
 export const authApp = exp.Router();
 
@@ -85,15 +87,27 @@ authApp.post("/login", async (req, res) => {
       });
     }
 
-    res.status(200).json({
-      success: true,
-      message: "Login successful",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
-      }
-    });
+ const token = jwt.sign(
+  {
+    id: user._id,
+    email: user.email
+  },
+  process.env.JWT_SECRET,
+  {
+    expiresIn: process.env.JWT_EXPIRES_IN || "1h"
+  }
+);
+
+res.status(200).json({
+  success: true,
+  message: "Login successful",
+  token: token,
+  user: {
+    id: user._id,
+    name: user.name,
+    email: user.email
+  }
+});
   } catch (error) {
     console.error("Login error:", error);
 
@@ -102,4 +116,13 @@ authApp.post("/login", async (req, res) => {
       message: "Internal server error"
     });
   }
+});
+
+
+authApp.get("/protected", verifyToken, (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "You have accessed the protected route successfully!",
+    user: req.user
+  });
 });
