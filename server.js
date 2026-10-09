@@ -4,10 +4,11 @@ import { config } from 'dotenv';
 config({quite:true}); //process.env
 
 import { basicApp } from "./APIs/basic-api.js";
+
+import { resumeApp } from "./APIs/resume-api.js";
 import { careerChatApp } from "./APIs/career-chat-api.js";
 import { preparationPlanApp } from "./APIs/preparation-plan-api.js";
 import { evidenceApp } from "./APIs/evidence-api.js";
-
 //http server
 const app=exp();
 
@@ -16,6 +17,8 @@ app.use(exp.json());
 
 // APIs
 app.use("/basic-api",basicApp);
+
+app.use("/api/resume", resumeApp);
 app.use("/api/career-chat", careerChatApp);
 app.use("/api/preparation-plan", preparationPlanApp);
 app.use("/api/evidence", evidenceApp);
