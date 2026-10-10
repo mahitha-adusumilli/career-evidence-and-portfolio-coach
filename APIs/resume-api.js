@@ -1,6 +1,8 @@
 import exp from "express";
 import multer from "multer";
 import { PDFParse } from "pdf-parse";
+import { verifyToken } from "../MIDDLEWARES/auth-middleware.js";
+import { Resume } from "../MODELS/resume.js";
 
 export const resumeApp = exp.Router();
 
@@ -18,7 +20,7 @@ const upload = multer({
     }
 });
 
-resumeApp.post("/upload", (req, res) => {
+resumeApp.post("/upload", verifyToken, (req, res) => {
     upload.single("resume")(req, res, async (error) => {
         if (error) {
             return res.status(400).json({
@@ -42,18 +44,31 @@ resumeApp.post("/upload", (req, res) => {
             const result = await parser.getText();
             await parser.destroy();
 
-            res.status(200).json({
-                success: true,
-                message: "Resume uploaded and text extracted successfully",
+            // Save the resume and link it to the logged-in user.
+            const savedResume = await Resume.create({
+                owner: req.user.id,
                 filename: req.file.originalname,
                 text: result.text
             });
+
+            return res.status(201).json({
+                success: true,
+                message: "Resume uploaded and saved successfully",
+                resume: {
+                    id: savedResume._id,
+                    owner: savedResume.owner,
+                    filename: savedResume.filename,
+                    text: savedResume.text
+                }
+            });
         } catch (error) {
-            res.status(500).json({
+            console.error("Resume processing error:", error);
+
+            return res.status(500).json({
                 success: false,
-                message: "Failed to process resume",
-                error: error.message
+                message: "Failed to process or save resume"
             });
         }
     });
+
 });
