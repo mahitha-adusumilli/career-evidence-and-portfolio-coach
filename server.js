@@ -44,10 +44,41 @@ async function connectDB(){
 connectDB();
 
 //ERM
-app.use((error,req,res,next)=>{
-    console.log("error! : ",error.message);
-    res.status(500).json({
-        success:false,
-        message:error.message
+
+app.use((error, req, res, next) => {
+    console.log("error! : ", error.message);
+
+    // Mongoose validation errors
+    if (error.name === "ValidationError") {
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+
+    // Invalid MongoDB ObjectId
+    if (error.name === "CastError") {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid evidence ID"
+        });
+    }
+
+    // Invalid JSON request body
+    if (
+        error instanceof SyntaxError &&
+        error.status === 400 &&
+        "body" in error
+    ) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid JSON request body"
+        });
+    }
+
+    // Other unexpected errors
+    return res.status(500).json({
+        success: false,
+        message: "Internal server error"
     });
-})
+});

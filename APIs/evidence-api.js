@@ -4,8 +4,6 @@ import { Evidence } from "../MODELS/Evidence.js";
 export const evidenceApp = exp.Router();
 
 
-// POST /api/evidence
-// Add new evidence
 evidenceApp.post("/", async (req, res, next) => {
     try {
         const evidence = await Evidence.create(req.body);
@@ -19,10 +17,6 @@ evidenceApp.post("/", async (req, res, next) => {
         next(error);
     }
 });
-
-
-// GET /api/evidence
-// Get all evidence
 evidenceApp.get("/", async (req, res, next) => {
     try {
         const evidence = await Evidence.find();
@@ -36,9 +30,27 @@ evidenceApp.get("/", async (req, res, next) => {
     }
 });
 
+evidenceApp.get("/:id", async (req, res, next) => {
+    try {
+        const evidence = await Evidence.findById(req.params.id);
 
-// PUT /api/evidence/:id
-// Update evidence
+        if (!evidence) {
+            return res.status(404).json({
+                success: false,
+                message: "Evidence not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            evidence: evidence
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+
 evidenceApp.put("/:id", async (req, res, next) => {
     try {
         const evidence = await Evidence.findByIdAndUpdate(
@@ -67,9 +79,6 @@ evidenceApp.put("/:id", async (req, res, next) => {
     }
 });
 
-
-// DELETE /api/evidence/:id
-// Delete evidence
 evidenceApp.delete("/:id", async (req, res, next) => {
     try {
         const evidence = await Evidence.findByIdAndDelete(req.params.id);
