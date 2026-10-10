@@ -8,6 +8,7 @@ import { authApp } from "./APIs/auth-api.js";
 import { resumeApp } from "./APIs/resume-api.js";
 import { careerChatApp } from "./APIs/career-chat-api.js";
 import { preparationPlanApp } from "./APIs/preparation-plan-api.js";
+import { jobDescriptionApp } from "./APIs/job-description-api.js";
 import { evidenceApp } from "./APIs/evidence-api.js";
 //http server
 const app = exp();
@@ -21,6 +22,7 @@ app.use("/api/auth", authApp);
 app.use("/api/resume", resumeApp);
 app.use("/api/career-chat", careerChatApp);
 app.use("/api/preparation-plan", preparationPlanApp);
+app.use("/api", jobDescriptionApp);
 app.use("/api/evidence", evidenceApp);
 
 //env variables
