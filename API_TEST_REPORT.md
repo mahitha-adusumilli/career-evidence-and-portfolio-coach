@@ -1,22 +1,22 @@
-\# API Test Report
+# API Test Report
 
 
 
-\*\*Project:\*\* Career Evidence and Portfolio Coach
+**Project:** Career Evidence and Portfolio Coach
 
-\*\*Tester:\*\* Member 63
+**Tester:** Member 63
 
-\*\*Date:\*\* 10 October 2026
+**Date:** 10 October 2026
 
-\*\*Code tested:\*\* latest `main` branch of the team repository
+**Code tested:** latest `main` branch of the team repository
 
-\*\*Environment:\*\* server running locally at `http://localhost:5000`, connected to the team's MongoDB Atlas database
+**Environment:** server running locally at `http://localhost:5000`, connected to the team's MongoDB Atlas database
 
-\*\*How it was run:\*\* `node test-apis.js "<path to a sample PDF>"`
+**How it was run:** `node test-apis.js "<path to a sample PDF>"`
 
 
 
-\## Summary
+## Summary
 
 
 
@@ -34,7 +34,7 @@
 
 
 
-One additional run of the same script gave 19 passed and 1 failed. The failure was \*\*Preparation Plan\*\* (`500`, "Failed to generate plan"). The server log for that run shows `AI error: Unexpected end of JSON input`. The same API passed in the other runs, so this looks intermittent. See "Bugs Discovered".
+One additional run of the same script gave 19 passed and 1 failed. The failure was **Preparation Plan** (`500`, "Failed to generate plan"). The server log for that run shows `AI error: Unexpected end of JSON input`. The same API passed in the other runs, so this looks intermittent. See "Bugs Discovered".
 
 
 
@@ -46,7 +46,7 @@ The script checks the status code and that a response body is present (for Caree
 
 
 
-\## Results
+## Results
 
 
 
@@ -96,7 +96,7 @@ The script checks the status code and that a response body is present (for Caree
 
 
 
-\## APIs Not Tested and Why
+## APIs Not Tested and Why
 
 
 
@@ -112,11 +112,11 @@ MongoDB connectivity (Member 5) was confirmed indirectly: the server connected t
 
 
 
-\## Bugs Discovered
+## Bugs Discovered
 
 
 
-\*\*Intermittent failure, Member 62 (Preparation Plan):\*\* in one run the API returned `500` "Failed to generate plan" and the server log showed `AI error: Unexpected end of JSON input`. It passed in the other runs. This suggests the AI reply was sometimes empty or incomplete and the code could not read it as JSON. The exact line was not investigated. Suggested follow-up: handle an empty or incomplete AI reply, for example by retrying once.
+**Intermittent failure, Member 62 (Preparation Plan):** in one run the API returned `500` "Failed to generate plan" and the server log showed `AI error: Unexpected end of JSON input`. It passed in the other runs. This suggests the AI reply was sometimes empty or incomplete and the code could not read it as JSON. The exact line was not investigated. Suggested follow-up: handle an empty or incomplete AI reply, for example by retrying once.
 
 
 
@@ -128,29 +128,29 @@ Minor notes:
 
 
 
-\- \*\*Member 51 (Evidence):\*\* the server warns that the update code uses a deprecated Mongoose option (`new`). It still works. Suggested fix: use `returnDocument: 'after'`.
+- **Member 51 (Evidence):** the server warns that the update code uses a deprecated Mongoose option (`new`). It still works. Suggested fix: use `returnDocument: 'after'`.
 
-\- \*\*Member 35 (Resume):\*\* on the latest `main` the upload returns `201` with the details inside a `resume` object, while the earlier branch screenshot showed `200` with `text` at the top level. Worth confirming this is the intended final response.
+- **Member 35 (Resume):** on the latest `main` the upload returns `201` with the details inside a `resume` object, while the earlier branch screenshot showed `200` with `text` at the top level. Worth confirming this is the intended final response.
 
-\- \*\*Member 59 (Career Chat):\*\* the answer to "Does my experience support Node.js?" was generic and did not mention any specific stored evidence. The API works, but it was not shown to ground its answer in saved evidence.
+- **Member 59 (Career Chat):** the answer to "Does my experience support Node.js?" was generic and did not mention any specific stored evidence. The API works, but it was not shown to ground its answer in saved evidence.
 
-\- \*\*Member 62 (Preparation Plan):\*\* when it worked, it returned a six-step plan for the goal "Become a backend developer".
-
-
-
-\## Notes on Test Data
+- **Member 62 (Preparation Plan):** when it worked, it returned a six-step plan for the goal "Become a backend developer".
 
 
 
-Each run creates one test user (`apitest\_<number>@test.com`) in the shared database. The evidence test creates a record and deletes it again. Test users can be removed by Member 5.
+## Notes on Test Data
 
 
 
-\## Screenshots
+Each run creates one test user (`apitest_<number>@test.com`) in the shared database. The evidence test creates a record and deletes it again. Test users can be removed by Member 5.
 
 
 
-\*\*1. Test script running in the terminal (PASS/FAIL lines and summary)\*\*
+## Screenshots
+
+
+
+**1. Test script running in the terminal (PASS/FAIL lines and summary)**
 
 
 
@@ -158,7 +158,7 @@ Main run, 20 passed:
 
 
 
-!\[Test script run, 20 passed](screenshots/test-run.png)
+![Test script run, 20 passed](screenshots/test-run.png)
 
 
 
@@ -166,11 +166,11 @@ Another run where Preparation Plan failed once (19 passed, 1 failed):
 
 
 
-!\[Test script run with one failure](screenshots/test-run-failure.png)
+![Test script run with one failure](screenshots/test-run-failure.png)
 
 
 
-\*\*2. Successful API responses in Postman\*\*
+**2. Successful API responses in Postman**
 
 
 
@@ -178,7 +178,7 @@ Career Chat (`POST /api/career-chat`, 200 OK):
 
 
 
-!\[Career Chat in Postman](screenshots/postman-career-chat.png)
+![Career Chat in Postman](screenshots/postman-career-chat.png)
 
 
 
@@ -186,33 +186,33 @@ Preparation Plan (`POST /api/preparation-plan`, 200 OK):
 
 
 
-!\[Preparation Plan in Postman](screenshots/postman-preparation-plan.png)
+![Preparation Plan in Postman](screenshots/postman-preparation-plan.png)
 
 
 
-\*\*3. Unauthorized response (protected route without a token)\*\*
+**3. Unauthorized response (protected route without a token)**
 
 
 
-!\[401 Unauthorized](screenshots/postman-401-unauthorized.png)
+![401 Unauthorized](screenshots/postman-401-unauthorized.png)
 
 
 
-\*\*4. Server running and connected to the database\*\*
+**4. Server running and connected to the database**
 
 
 
-!\[Server running](screenshots/server-running.png)
+![Server running](screenshots/server-running.png)
 
 
 
-\## Unresolved Issues and Dependencies
+## Unresolved Issues and Dependencies
 
 
 
-\- Preparation Plan failed intermittently once (`Unexpected end of JSON input`). Needs a look from Member 62.
+- Preparation Plan failed intermittently once (`Unexpected end of JSON input`). Needs a look from Member 62.
 
-\- RAG and vector search have no API route yet.
+- RAG and vector search have no API route yet.
 
-\- Career Chat and Preparation Plan only work on a machine that has Ollama running with `llama3.2`. Team members testing them need the same setup.
+- Career Chat and Preparation Plan only work on a machine that has Ollama running with `llama3.2`. Team members testing them need the same setup.
 
