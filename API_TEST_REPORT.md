@@ -2,8 +2,8 @@
 
 - **Project:** Career Evidence and Portfolio Coach
 - **Tester:** Member 63
-- **Date:** 10 October 2026
-- **Code tested:** latest `main` branch of the team repository
+- **Date:** 10 October 2026 (first test runs), 11 October 2026 (retest after Member 62's fix)
+- **Code tested:** latest `main` branch of the team repository. The retest includes Member 62's fix (pull request #7).
 - **Environment:** server running locally at `http://localhost:5000`, connected to the team's MongoDB Atlas database
 - **How it was run:** `node test-apis.js "<path to a sample PDF>"`
 
@@ -11,14 +11,17 @@
 
 | Measure | Count |
 |---|---|
-| Tests executed in the main run | 20 |
-| Passed in the main run | 20 |
-| Failed in the main run | 0 |
+| Tests per run | 20 |
+| Main run before the fix: passed | 20 of 20 |
+| Another run before the fix: passed | 19 of 20 (1 failure, Preparation Plan) |
+| Retest after Member 62's fix: number of runs | 5 |
+| Retest after the fix: passed in each run | 20 of 20 |
+| Retest after the fix: failed | 0 |
 | Not tested | 0 |
 
-One additional run of the same script gave 19 passed and 1 failed. The failure was **Preparation Plan** (`500`, "Failed to generate plan"). The server log for that run shows `AI error: Unexpected end of JSON input`. The same API passed in the other runs, so this looks intermittent. See "Bugs Discovered".
+One run before the fix gave 19 passed and 1 failed. The failure was **Preparation Plan** (`500`, "Failed to generate plan"). The server log for that run showed `AI error: Unexpected end of JSON input`. The same API passed in the other runs, so it was intermittent. Member 62 then merged a fix, and after pulling it and restarting the server, all 5 retest runs passed. See "Bugs Discovered".
 
-Career Chat and Preparation Plan need a local Ollama instance running the `llama3.2` model (both APIs call `http://localhost:11434/api/generate`). On the first runs, before Ollama was installed on the tester's machine, both returned `500` (server log: `AI error: fetch failed`). After installing Ollama and the `llama3.2` model, both passed in most runs.
+Career Chat and Preparation Plan need a local Ollama instance running the `llama3.2` model (both APIs call `http://localhost:11434/api/generate`). On the first runs, before Ollama was installed on the tester's machine, both returned `500` (server log: `AI error: fetch failed`). After installing Ollama and the `llama3.2` model, both passed.
 
 The script checks the status code and that a response body is present (for Career Chat, that `response` is a non-empty text). It does not judge the quality of the AI answers. See the Postman screenshots for actual response content.
 
@@ -45,7 +48,7 @@ The script checks the status code and that a response body is present (for Caree
 | Evidence, delete | DELETE | Record deleted | 200 | Pass |
 | Evidence, get after delete | GET | 404 | 404 | Pass |
 | Career Chat, `/api/career-chat` | POST | Answer returned | 200 with a text response (local Ollama, `llama3.2`) | Pass |
-| Preparation Plan, `/api/preparation-plan` | POST | Plan returned | 200 with a plan in most runs; 500 "Failed to generate plan" in one run | Pass (intermittent failure) |
+| Preparation Plan, `/api/preparation-plan` | POST | Plan returned | 200 with a plan. One 500 before the fix; 5 of 5 retest runs passed after the fix | Pass (retested after fix) |
 
 ## APIs Not Tested and Why
 
@@ -57,7 +60,7 @@ MongoDB connectivity (Member 5) was confirmed indirectly: the server connected t
 
 ## Bugs Discovered
 
-**Intermittent failure, Member 62 (Preparation Plan):** in one run the API returned `500` "Failed to generate plan" and the server log showed `AI error: Unexpected end of JSON input`. It passed in the other runs. This suggests the AI reply was sometimes empty or incomplete and the code could not read it as JSON. The exact line was not investigated. Suggested follow-up: handle an empty or incomplete AI reply, for example by retrying once.
+**Member 62 (Preparation Plan), fixed:** before the fix, one run returned `500` "Failed to generate plan" and the server log showed `AI error: Unexpected end of JSON input`. It passed in the other runs. Member 62 merged a fix (pull request #7, "Retry and validate AI response in preparation plan API"). After pulling it and restarting the server, the script was run 5 times in a row and Preparation Plan passed every time. Five clean runs make it likely fixed, but because the problem was intermittent they do not prove it.
 
 No other confirmed bugs in the APIs that could be tested.
 
@@ -76,13 +79,17 @@ Each run creates one test user (`apitest_<number>@test.com`) in the shared datab
 
 **1. Test script running in the terminal (PASS/FAIL lines and summary)**
 
-Main run, 20 passed:
+Main run before the fix, 20 passed:
 
 ![Test script run, 20 passed](screenshots/test-run.png)
 
-Another run where Preparation Plan failed once (19 passed, 1 failed):
+Another run before the fix, where Preparation Plan failed once (19 passed, 1 failed):
 
 ![Test script run with one failure](screenshots/test-run-failure.png)
+
+Retest after Member 62's fix, 5 runs, 20 of 20 passed each time:
+
+![Retest after fix](screenshots/retest-after-fix.png)
 
 **2. Successful API responses in Postman**
 
@@ -104,6 +111,6 @@ Preparation Plan (`POST /api/preparation-plan`, 200 OK):
 
 ## Unresolved Issues and Dependencies
 
-- Preparation Plan failed intermittently once (`Unexpected end of JSON input`). Needs a look from Member 62.
-- RAG and vector search have no API route yet.
+- RAG and vector search have no API route yet (Member 58).
 - Career Chat and Preparation Plan only work on a machine that has Ollama running with `llama3.2`. Team members testing them need the same setup.
+- Preparation Plan was fixed by Member 62 after an intermittent failure. It is worth watching in later runs.
