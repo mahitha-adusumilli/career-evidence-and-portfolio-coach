@@ -3,6 +3,7 @@ import multer from "multer";
 import { PDFParse } from "pdf-parse";
 import { verifyToken } from "../MIDDLEWARES/auth-middleware.js";
 import { Resume } from "../MODELS/resume.js";
+import { indexText } from "../SERVICES/ragIndexingService.js";
 
 export const resumeApp = exp.Router();
 
@@ -49,6 +50,12 @@ resumeApp.post("/upload", verifyToken, (req, res) => {
                 owner: req.user.id,
                 filename: req.file.originalname,
                 text: result.text
+            });
+
+            await indexText(savedResume.text, {
+            studentId: savedResume.owner,
+            sourceId: savedResume._id,
+            sourceType: "resume"
             });
 
             return res.status(201).json({

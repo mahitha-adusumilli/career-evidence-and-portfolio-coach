@@ -1,8 +1,9 @@
 import exp from "express";
+import { verifyToken } from "../MIDDLEWARES/auth-middleware.js";
 
 export const preparationPlanApp = exp.Router();
 
-preparationPlanApp.post("/", async function (req, res) {
+preparationPlanApp.post("/", verifyToken, async function (req, res) {
   try {
     var goal = req.body.goal;
     if (!goal || typeof goal !== "string" || goal.trim() === "") {
@@ -45,7 +46,8 @@ preparationPlanApp.post("/", async function (req, res) {
       });
     }
 
-    res.status(200).json({ plan: plan });
+    var userId = req.user ? (req.user.id || req.user._id) : req.userId;
+    res.status(200).json({ plan: plan, userId: userId });
   } catch (err) {
     console.log("AI error:", err.message);
     res.status(500).json({ success: false, message: "Failed to generate plan" });
