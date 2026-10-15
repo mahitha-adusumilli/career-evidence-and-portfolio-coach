@@ -162,6 +162,9 @@ async function main() {
   r = await call("POST", "/api/preparation-plan", { body: { goal: "Become a backend developer" } });
   show("Preparation plan", "POST", "/api/preparation-plan", "200 or 201 with a plan", r, [200, 201].includes(r.status) && r.text.length > 0);
 
+    // Member 58 - RAG / vector search
+  skip("RAG vector search", "-", "(no search route)", "Dependency Pending - no search route in main; vectorSearchService.js is not wired to any API");
+
   const pass = results.filter((x) => x === "PASS").length;
   const fail = results.filter((x) => x === "FAIL").length;
   const skipped = results.filter((x) => x === "SKIP").length;

@@ -17,7 +17,7 @@
 | Retest after Member 62's fix: number of runs | 5 |
 | Retest after the fix: passed in each run | 20 of 20 |
 | Retest after the fix: failed | 0 |
-| Not tested | 0 |
+| Not tested | 1 (RAG vector search, Dependency Pending) |
 
 One run before the fix gave 19 passed and 1 failed. The failure was **Preparation Plan** (`500`, "Failed to generate plan"). The server log for that run showed `AI error: Unexpected end of JSON input`. The same API passed in the other runs, so it was intermittent. Member 62 then merged a fix, and after pulling it and restarting the server, all 5 retest runs passed. See "Bugs Discovered".
 
@@ -54,7 +54,7 @@ The script checks the status code and that a response body is present (for Caree
 
 | API | Owner | Reason |
 |---|---|---|
-| RAG and vector search | Member 58 | No route is registered in `server.js`, so there is nothing to call through the API yet. |
+| RAG vector search | Member 58 | Not Tested - Dependency Pending. No search route exists in `main`: `vectorSearchService.js` is not called by any API, so there is nothing to call. RAG indexing is covered indirectly, since resume upload calls it and returns 201. |
 
 MongoDB connectivity (Member 5) was confirmed indirectly: the server connected to Atlas and all database tests above passed.
 
@@ -69,6 +69,7 @@ Minor notes:
 - **Member 51 (Evidence):** the server warns that the update code uses a deprecated Mongoose option (`new`). It still works. Suggested fix: use `returnDocument: 'after'`.
 - **Member 35 (Resume):** on the latest `main` the upload returns `201` with the details inside a `resume` object, while the earlier branch screenshot showed `200` with `text` at the top level. Worth confirming this is the intended final response.
 - **Member 59 (Career Chat):** the answer to "Does my experience support Node.js?" was generic and did not mention any specific stored evidence. The API works, but it was not shown to ground its answer in saved evidence.
+- **Member 58 (RAG):** `resume-api.js` calls `indexText` after `Resume.create`, inside the same try block. If indexing fails, the user gets a `500` even though the resume is already saved. Also, the upload response does not mention chunks, so the API alone cannot prove chunks were stored. The Atlas `$vectorSearch` index on the chunks collection could not be checked, so its existence is unknown (not a confirmed bug).
 - **Member 62 (Preparation Plan):** when it worked, it returned a six-step plan for the goal "Become a backend developer".
 
 ## Notes on Test Data
@@ -91,6 +92,10 @@ Retest after Member 62's fix, 5 runs, 20 of 20 passed each time:
 
 ![Retest after fix](screenshots/retest-after-fix.png)
 
+Latest run after the RAG skip was added (20 passed, 0 failed, 1 not tested; RAG vector search marked Not Tested - Dependency Pending):
+
+![Test run with RAG pending](screenshots/test-run-rag-pending.png)
+
 **2. Successful API responses in Postman**
 
 Career Chat (`POST /api/career-chat`, 200 OK):
@@ -111,6 +116,6 @@ Preparation Plan (`POST /api/preparation-plan`, 200 OK):
 
 ## Unresolved Issues and Dependencies
 
-- RAG and vector search have no API route yet (Member 58).
+- RAG vector search has no API route in `main` yet (Member 58), so it is marked Not Tested - Dependency Pending. The Atlas vector search index on the chunks collection (likely `evidencechunks`) could not be checked through the API.
 - Career Chat and Preparation Plan only work on a machine that has Ollama running with `llama3.2`. Team members testing them need the same setup.
 - Preparation Plan was fixed by Member 62 after an intermittent failure. It is worth watching in later runs.
