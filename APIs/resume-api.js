@@ -1,3 +1,5 @@
+import { storeResumePDF, getResumeFileStream } from "../SERVICES/resume-file-storage.js";
+import { Types } from "mongoose";
 import exp from "express";
 import multer from "multer";
 import { PDFParse } from "pdf-parse";
@@ -45,17 +47,25 @@ resumeApp.post("/upload", verifyToken, (req, res) => {
             const result = await parser.getText();
             await parser.destroy();
 
-            // Save the resume and link it to the logged-in user.
+            // Store the original PDF in MongoDB GridFS.
+            const fileId = await storeResumePDF(
+                req.file.buffer,
+                req.file.originalname,
+                req.user.id
+            );
+
+            // Save the resume details and GridFS file reference.
             const savedResume = await Resume.create({
                 owner: req.user.id,
                 filename: req.file.originalname,
+                fileId: fileId,
                 text: result.text
             });
 
             await indexText(savedResume.text, {
-            studentId: savedResume.owner,
-            sourceId: savedResume._id,
-            sourceType: "resume"
+                studentId: savedResume.owner,
+                sourceId: savedResume._id,
+                sourceType: "resume"
             });
 
             return res.status(201).json({
@@ -78,4 +88,61 @@ resumeApp.post("/upload", verifyToken, (req, res) => {
         }
     });
 
+});
+
+resumeApp.get("/:id/file", verifyToken, async (req, res) => {
+    try {
+        // Validate the resume ID.
+        if (!Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid resume ID"
+            });
+        }
+
+        // Find the resume belonging to the logged-in user.
+        const resume = await Resume.findOne({
+            _id: req.params.id,
+            owner: req.user.id
+        });
+
+        if (!resume) {
+            return res.status(404).json({
+                success: false,
+                message: "Resume not found"
+            });
+        }
+
+        // Stream the original PDF from GridFS.
+        const fileStream = getResumeFileStream(resume.fileId);
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.attachment(resume.filename);
+
+        fileStream.on("error", (error) => {
+            console.error("Resume download error:", error);
+
+            if (!res.headersSent) {
+                res.status(404).json({
+                    success: false,
+                    message: "Original PDF file not found"
+                });
+            } else {
+                res.destroy(error);
+            }
+        });
+
+        fileStream.pipe(res);
+    } catch (error) {
+        console.error("Resume retrieval error:", error);
+
+        if (!res.headersSent) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to retrieve resume"
+            });
+        }
+
+        res.destroy(error);
+    }
 });
