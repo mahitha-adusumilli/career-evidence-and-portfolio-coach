@@ -14,6 +14,10 @@ const resumeSchema = new Schema(
             required: true,
             trim: true
         },
+        fileId: {
+            type: Schema.Types.ObjectId,
+            required: true
+        },
         text: {
             type: String,
             required: true

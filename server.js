@@ -26,8 +26,8 @@ app.use("/api", jobDescriptionApp);
 app.use("/api/evidence", evidenceApp);
 
 // Environment variables
-const port = process.env.port;
-const db_url = process.env.db_url;
+const port = process.env.PORT;
+const db_url = process.env.DB_URL;
 
 // Connect to database
 async function connectDB() {
