@@ -158,9 +158,16 @@ async function main() {
   show("Career chat", "POST", "/api/career-chat", "200 and a text response", r,
     r.status === 200 && typeof r.json?.response === "string" && r.json.response.length > 0);
 
-  // Member 62 - preparation plan
+  // Member 62 - preparation plan (now protected by JWT)
   r = await call("POST", "/api/preparation-plan", { body: { goal: "Become a backend developer" } });
-  show("Preparation plan", "POST", "/api/preparation-plan", "200 or 201 with a plan", r, [200, 201].includes(r.status) && r.text.length > 0);
+  show("Preparation plan - no token", "POST", "/api/preparation-plan", "401", r, r.status === 401);
+
+  if (token) {
+    r = await call("POST", "/api/preparation-plan", { token, body: { goal: "Become a backend developer" } });
+    show("Preparation plan - valid token", "POST", "/api/preparation-plan", "200 or 201 with a plan", r, [200, 201].includes(r.status) && r.text.length > 0);
+  } else {
+    skip("Preparation plan - valid token", "POST", "/api/preparation-plan", "login did not return a token");
+  }
 
     // Member 58 - RAG / vector search
   skip("RAG vector search", "-", "(no search route)", "Dependency Pending - no search route in main; vectorSearchService.js is not wired to any API");
