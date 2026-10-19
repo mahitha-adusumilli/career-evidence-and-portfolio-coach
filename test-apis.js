@@ -125,27 +125,27 @@ async function main() {
   show("Job description", "POST", "/api/job-description", "200 or 201 with a body", r, [200, 201].includes(r.status) && r.text.length > 0);
 
   // Member 51 - evidence
-  r = await call("POST", "/api/evidence", { body: {} });
+    r = await call("POST", "/api/evidence", { token, body: {} });
   show("Evidence - missing fields", "POST", "/api/evidence", "400", r, r.status === 400);
 
-  r = await call("POST", "/api/evidence", { body: { title: "API test evidence", description: "Created by test-apis.js", skills: ["Node.js"], projectLink: "https://example.com" } });
+    r = await call("POST", "/api/evidence", { token, body: { title: "API test evidence", description: "Created by test-apis.js", skills: ["Node.js"], projectLink: "https://example.com" } });
   const id = pickId(r.json);
   show("Evidence - create", "POST", "/api/evidence", "201 and an id", r, r.status === 201 && !!id);
 
   if (id) {
-    r = await call("GET", "/api/evidence");
+        r = await call("GET", "/api/evidence", { token });
     show("Evidence - list", "GET", "/api/evidence", "200 and includes the new record", r, r.status === 200 && r.text.includes(id));
 
-    r = await call("GET", `/api/evidence/${id}`);
+       r = await call("GET", `/api/evidence/${id}`, { token });
     show("Evidence - get by id", "GET", `/api/evidence/:id`, "200 and same id", r, r.status === 200 && r.text.includes(id));
 
-    r = await call("PUT", `/api/evidence/${id}`, { body: { title: "API test evidence (updated)" } });
+        r = await call("PUT", `/api/evidence/${id}`, { token, body: { title: "API test evidence (updated)" } });
     show("Evidence - update", "PUT", `/api/evidence/:id`, "200 and updated title", r, r.status === 200 && r.text.includes("(updated)"));
 
-    r = await call("DELETE", `/api/evidence/${id}`);
+        r = await call("DELETE", `/api/evidence/${id}`, { token });
     show("Evidence - delete", "DELETE", `/api/evidence/:id`, "200 or 204", r, [200, 204].includes(r.status));
 
-    r = await call("GET", `/api/evidence/${id}`);
+       r = await call("GET", `/api/evidence/${id}`, { token });
     show("Evidence - get after delete", "GET", `/api/evidence/:id`, "404", r, r.status === 404);
   } else {
     for (const t of ["list", "get by id", "update", "delete"]) {
@@ -154,7 +154,7 @@ async function main() {
   }
 
   // Member 59 - career chat
-  r = await call("POST", "/api/career-chat", { body: { question: "Does my experience support Node.js?" } });
+    r = await call("POST", "/api/career-chat", { token, body: { question: "Does my experience support Node.js?" } });
   show("Career chat", "POST", "/api/career-chat", "200 and a text response", r,
     r.status === 200 && typeof r.json?.response === "string" && r.json.response.length > 0);
 

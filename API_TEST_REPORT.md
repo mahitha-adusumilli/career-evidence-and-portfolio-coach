@@ -19,6 +19,7 @@
 | Retest after the fix: failed | 0 |
 | Not tested | 1 (RAG vector search, Dependency Pending) |
 | Latest run after the JWT change (21 tests) | 21 passed, 0 failed, 1 not tested |
+| Latest run after merging the latest `main` on 19 October (Evidence and Career Chat need a token) | 21 passed, 0 failed, 1 not tested |
 
 One run before the fix gave 19 passed and 1 failed. The failure was **Preparation Plan** (`500`, "Failed to generate plan"). The server log for that run showed `AI error: Unexpected end of JSON input`. The same API passed in the other runs, so it was intermittent. Member 62 then merged a fix, and after pulling it and restarting the server, all 5 retest runs passed. See "Bugs Discovered".
 
@@ -41,14 +42,14 @@ The script checks the status code and that a response body is present (for Caree
 | Resume upload, no token, `/api/resume/upload` | POST | 401 | 401 | Pass |
 | Resume upload, with PDF | POST | PDF text extracted | 201, extracted text present ("AI Powered Full Stack Capstone Projects...") | Pass |
 | Job description, `/api/job-description` | POST | Accepted with a response | 200 | Pass |
-| Evidence, missing fields, `/api/evidence` | POST | 400 | 400 | Pass |
-| Evidence, create | POST | Record created with an id | 201 with id | Pass |
+| Evidence, missing fields, `/api/evidence` (with Bearer token) | POST | 400 | 400 | Pass |
+| Evidence, create (with Bearer token) | POST | Record created with an id | 201 with id | Pass |
 | Evidence, list | GET | New record appears in the list | 200, record present | Pass |
 | Evidence, get by id | GET | Same record returned | 200, same id | Pass |
 | Evidence, update | PUT | Updated title returned | 200, title updated | Pass |
 | Evidence, delete | DELETE | Record deleted | 200 | Pass |
 | Evidence, get after delete | GET | 404 | 404 | Pass |
-| Career Chat, `/api/career-chat` | POST | Answer returned | 200 with a text response (local Ollama, `llama3.2`) | Pass |
+| Career Chat, `/api/career-chat` (with Bearer token) | POST | Answer returned | 200 with a text response (local Ollama, `llama3.2`) | Pass |
 | Preparation Plan, `/api/preparation-plan` (no token) | POST | 401 Unauthorized | 401 (route is now protected by JWT after Member 62's change) | Pass |
 | Preparation Plan, `/api/preparation-plan` (valid Bearer token) | POST | Plan returned | 200 with a plan. One 500 before PR #7; 5 of 5 retest runs passed after it; passes with a token after the JWT change | Pass (retested after fix and JWT) |
 
@@ -102,6 +103,10 @@ Latest run after Member 62's JWT change (21 tests; Preparation Plan with no toke
 
 ![Test run after JWT change](screenshots/test-run-jwt.png)
 
+Latest run on the updated `main` (19 October; 21 tests, Evidence and Career Chat sent with a Bearer token):
+
+![Test script run on latest main](screenshots/test-run-latest-main.png)
+
 **2. Successful API responses in Postman**
 
 Career Chat (`POST /api/career-chat`, 200 OK):
@@ -123,5 +128,6 @@ Preparation Plan (`POST /api/preparation-plan`, 200 OK):
 ## Unresolved Issues and Dependencies
 
 - RAG vector search has no API route in `main` yet (Member 58), so it is marked Not Tested - Dependency Pending. Member 58 says search is a service function (`searchRelevantChunks()`), integrated with Career Chat only on their branch, and that the Atlas index `rag_vector_index` exists on `evidencechunks`. This was reported by Member 58 and was not verified through the API. Retest once their branch is merged. On 19 October I also checked the branch `origin/features/rag-services`: `searchRelevantChunks()` is still only defined in `vectorSearchService.js`, with no route calling it, and `testSearch.js` was not on that branch.
+- After merging the latest `main` on 19 October, Evidence and Career Chat now require a Bearer token (`401 "Access denied. Token is required."` without one). The first rerun showed 3 to 4 failures because `test-apis.js` sent no token on those routes; this was a test-script gap, not an API bug. The script now sends the login token on them, and the full suite passes again. Anyone calling these APIs must send a token.
 - Career Chat and Preparation Plan only work on a machine that has Ollama running with `llama3.2`. Team members testing them need the same setup.
 - Preparation Plan was fixed by Member 62 after an intermittent failure, and Member 62's JWT change (now merged into `main`) made the route require a Bearer token. Both were retested on 15 October: no token gives 401, a valid token gives 200. It is still worth watching in later runs because the original failure was intermittent.
