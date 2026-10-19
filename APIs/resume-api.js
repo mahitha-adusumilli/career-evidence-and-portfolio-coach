@@ -44,8 +44,13 @@ resumeApp.post("/upload", verifyToken, (req, res) => {
                 data: req.file.buffer
             });
 
-            const result = await parser.getText();
-            await parser.destroy();
+            let result;
+
+            try {
+                result = await parser.getText();
+            } finally {
+                await parser.destroy();
+            }
 
             // Store the original PDF in MongoDB GridFS.
             const fileId = await storeResumePDF(
@@ -62,6 +67,7 @@ resumeApp.post("/upload", verifyToken, (req, res) => {
                 text: result.text
             });
 
+            // Generate embeddings and index the extracted text.
             await indexText(savedResume.text, {
                 studentId: savedResume.owner,
                 sourceId: savedResume._id,
@@ -81,13 +87,19 @@ resumeApp.post("/upload", verifyToken, (req, res) => {
         } catch (error) {
             console.error("Resume processing error:", error);
 
+            if (error.name === "InvalidPDFException") {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid or corrupted PDF file"
+                });
+            }
+
             return res.status(500).json({
                 success: false,
                 message: "Failed to process or save resume"
             });
         }
     });
-
 });
 
 resumeApp.get("/:id/file", verifyToken, async (req, res) => {
