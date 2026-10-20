@@ -4,7 +4,7 @@ const evidenceChunkSchema = new Schema(
     {
         studentId: {
             type: Schema.Types.ObjectId,
-            ref:"Student",
+            ref:"User",
             required: true,
             index: true
         },
