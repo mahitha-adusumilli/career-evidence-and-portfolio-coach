@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 import { GridFSBucket, ObjectId } from "mongodb";
 import { Readable } from "node:stream";
@@ -31,7 +30,8 @@ export function storeResumePDF(buffer, filename, ownerId) {
         uploadStream.once("error", reject);
         uploadStream.once("finish", () => resolve(fileId));
 
-        Readable.from(buffer).pipe(uploadStream);
+        // Stream the complete PDF buffer.
+        Readable.from([buffer]).pipe(uploadStream);
     });
 }
 
@@ -41,6 +41,16 @@ export function getResumeFileStream(fileId) {
     }
 
     return getResumeBucket().openDownloadStream(
+        new ObjectId(String(fileId))
+    );
+}
+
+export function deleteResumePDF(fileId) {
+    if (!ObjectId.isValid(String(fileId))) {
+        throw new Error("Invalid resume file ID");
+    }
+
+    return getResumeBucket().delete(
         new ObjectId(String(fileId))
     );
 }
