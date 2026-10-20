@@ -1,4 +1,9 @@
-import { storeResumePDF, getResumeFileStream } from "../SERVICES/resume-file-storage.js";
+
+import {
+    storeResumePDF,
+    getResumeFileStream,
+    deleteResumePDF
+} from "../SERVICES/resume-file-storage.js";
 import { Types } from "mongoose";
 import exp from "express";
 import multer from "multer";
@@ -32,6 +37,12 @@ resumeApp.post("/upload", verifyToken, (req, res) => {
             });
         }
 
+        let newFileId = null;
+        let existingResume = null;
+        let oldResumeData = null;
+        let indexingAttempted = false;
+        let metadataUpdated = false;
+
         try {
             if (!req.file) {
                 return res.status(400).json({
@@ -40,6 +51,7 @@ resumeApp.post("/upload", verifyToken, (req, res) => {
                 });
             }
 
+            // Extract text before changing the existing resume.
             const parser = new PDFParse({
                 data: req.file.buffer
             });
@@ -52,22 +64,86 @@ resumeApp.post("/upload", verifyToken, (req, res) => {
                 await parser.destroy();
             }
 
-            // Store the original PDF in MongoDB GridFS.
-            const fileId = await storeResumePDF(
+            if (!result.text || !result.text.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    message: "No readable text found in the PDF"
+                });
+            }
+
+            // Find this user's existing resume.
+            existingResume = await Resume.findOne({
+                owner: req.user.id
+            });
+
+            // Store the new PDF before changing existing data.
+            newFileId = await storeResumePDF(
                 req.file.buffer,
                 req.file.originalname,
                 req.user.id
             );
 
-            // Save the resume details and GridFS file reference.
+            if (existingResume) {
+                // Keep the existing resume ID and save its old data
+                // so we can attempt recovery if an update fails.
+                oldResumeData = {
+                    filename: existingResume.filename,
+                    fileId: existingResume.fileId,
+                    text: existingResume.text
+                };
+
+                // Re-index using the same source ID.
+                indexingAttempted = true;
+
+                await indexText(result.text, {
+                    studentId: existingResume.owner,
+                    sourceId: existingResume._id,
+                    sourceType: "resume"
+                });
+
+                // Replace the existing resume document.
+                existingResume.filename = req.file.originalname;
+                existingResume.fileId = newFileId;
+                existingResume.text = result.text;
+
+                await existingResume.save();
+                metadataUpdated = true;
+
+                // Delete the previous PDF only after success.
+                try {
+                    await deleteResumePDF(oldResumeData.fileId);
+                } catch (cleanupError) {
+                    console.error(
+                        "Old resume PDF cleanup failed:",
+                        cleanupError
+                    );
+                }
+
+                return res.status(200).json({
+                    success: true,
+                    message: "Resume replaced successfully",
+                    resume: {
+                        id: existingResume._id,
+                        owner: existingResume.owner,
+                        filename: existingResume.filename,
+                        text: existingResume.text
+                    }
+                });
+            }
+
+            // First upload: create a resume document.
             const savedResume = await Resume.create({
                 owner: req.user.id,
                 filename: req.file.originalname,
-                fileId: fileId,
+                fileId: newFileId,
                 text: result.text
             });
 
-            // Generate embeddings and index the extracted text.
+            existingResume = savedResume;
+
+            // Index the resume using its permanent document ID.
+            indexingAttempted = true;
+
             await indexText(savedResume.text, {
                 studentId: savedResume.owner,
                 sourceId: savedResume._id,
@@ -87,6 +163,61 @@ resumeApp.post("/upload", verifyToken, (req, res) => {
         } catch (error) {
             console.error("Resume processing error:", error);
 
+            // If replacement indexing or saving failed, try to
+            // restore the previous resume's chunks.
+            if (
+                existingResume &&
+                oldResumeData &&
+                indexingAttempted &&
+                !metadataUpdated
+            ) {
+                try {
+                    await indexText(oldResumeData.text, {
+                        studentId: existingResume.owner,
+                        sourceId: existingResume._id,
+                        sourceType: "resume"
+                    });
+                } catch (restoreError) {
+                    console.error(
+                        "Previous resume chunks could not be restored:",
+                        restoreError
+                    );
+                }
+            }
+
+            // Remove a newly created resume document if its first
+            // upload failed during indexing.
+            if (
+                existingResume &&
+                !oldResumeData &&
+                indexingAttempted &&
+                !metadataUpdated
+            ) {
+                try {
+                    await Resume.deleteOne({
+                        _id: existingResume._id,
+                        owner: req.user.id
+                    });
+                } catch (cleanupError) {
+                    console.error(
+                        "Failed to clean up resume document:",
+                        cleanupError
+                    );
+                }
+            }
+
+            // Never intentionally delete the previous PDF here.
+            if (newFileId) {
+                try {
+                    await deleteResumePDF(newFileId);
+                } catch (cleanupError) {
+                    console.error(
+                        "New resume PDF cleanup failed:",
+                        cleanupError
+                    );
+                }
+            }
+
             if (error.name === "InvalidPDFException") {
                 return res.status(400).json({
                     success: false,
@@ -104,7 +235,6 @@ resumeApp.post("/upload", verifyToken, (req, res) => {
 
 resumeApp.get("/:id/file", verifyToken, async (req, res) => {
     try {
-        // Validate the resume ID.
         if (!Types.ObjectId.isValid(req.params.id)) {
             return res.status(400).json({
                 success: false,
@@ -112,7 +242,6 @@ resumeApp.get("/:id/file", verifyToken, async (req, res) => {
             });
         }
 
-        // Find the resume belonging to the logged-in user.
         const resume = await Resume.findOne({
             _id: req.params.id,
             owner: req.user.id
@@ -125,7 +254,6 @@ resumeApp.get("/:id/file", verifyToken, async (req, res) => {
             });
         }
 
-        // Stream the original PDF from GridFS.
         const fileStream = getResumeFileStream(resume.fileId);
 
         res.setHeader("Content-Type", "application/pdf");

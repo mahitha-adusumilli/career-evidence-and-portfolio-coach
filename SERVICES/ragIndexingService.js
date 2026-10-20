@@ -39,14 +39,31 @@ export async function indexText(text, metadata) {
         });
     }
 
-    // Remove previous chunks only after all embeddings are generated.
+    // Save the existing chunks so they can be restored if insertion fails.
+    const previousChunks = await EvidenceChunk.find({
+        studentId,
+        sourceId,
+        sourceType
+    }).lean();
+
     await EvidenceChunk.deleteMany({
         studentId,
         sourceId,
         sourceType
     });
 
-    await EvidenceChunk.insertMany(records);
+    try {
+        await EvidenceChunk.insertMany(records);
+    } catch (error) {
+        // Restore previous chunks if inserting new chunks fails.
+        if (previousChunks.length > 0) {
+            await EvidenceChunk.insertMany(
+                previousChunks.map(({ _id, ...chunk }) => chunk)
+            );
+        }
+
+        throw error;
+    }
 
     return {
         chunksCreated: records.length
